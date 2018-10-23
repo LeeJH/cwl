@@ -126,6 +126,7 @@ type Graph struct {
 }
 
 func (Tool) Doctype()       string    { return "CommandLineTool" }
+func (Script) Doctype()		string 	  { return "ScriptTool" }
 func (Workflow) Doctype() string      { return "Workflow" }
 func (ExpressionTool) Doctype() string { return "ExpressionTool" }
 func (DocumentRef) Doctype() string   { return "DocumentRef" }
@@ -218,6 +219,9 @@ func (SubworkflowFeatureRequirement) requirement()   {}
 func (ScatterFeatureRequirement) requirement()       {}
 func (MultipleInputFeatureRequirement) requirement() {}
 func (StepInputExpressionRequirement) requirement()  {}
+//func (PreCMDRequirement) requirement()               {}
+//func (PostCMDRequirement) requirement()               {}
+func (LRMRequirement) requirement()            	   {}
 
 type WorkflowRequirement interface {
 	wfrequirement()

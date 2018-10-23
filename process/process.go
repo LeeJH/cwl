@@ -2,8 +2,8 @@ package process
 
 import (
 	"encoding/json"
-	"github.com/buchanae/cwl"
-	"github.com/buchanae/cwl/expr"
+	"cwl"
+	"cwl/expr"
 	"github.com/rs/xid"
 )
 
@@ -39,10 +39,23 @@ type Process struct {
 	runtime        Runtime
 	fs             Filesystem
 	bindings       []*Binding
+	// New
+	multicmds       bool
+	//bindings2d 		[][]*Binding
+	inputfiles		[]cwl.File
+	outputfiles 	[]cwl.File
+	// End
 	expressionLibs []string
 	env            map[string]string
+	envExpr			[]string
+	// New
+	//pre 			[]string
+	//post 			[]string
+	lrm 			map[string]string
+	// End
 	shell          bool
 	resources      Resources
+	stdin 		   string
 	stdout         string
 	stderr         string
 }
@@ -62,6 +75,8 @@ func NewProcess(tool *cwl.Tool, values cwl.Values, rt Runtime, fs Filesystem) (*
 		runtime: rt,
 		fs:      fs,
 		env:     map[string]string{},
+		lrm:     map[string]string{},
+
 	}
 
 	// Set default input values.
@@ -72,6 +87,8 @@ func NewProcess(tool *cwl.Tool, values cwl.Values, rt Runtime, fs Filesystem) (*
 	// Since every part of a tool depends on "inputs" being available to expressions,
 	// nothing can be done on a Process without a valid inputs binding,
 	// which is why we bind in the Process constructor.
+	process.multicmds = tool.MultiCMDs
+	
 	for _, in := range tool.Inputs {
 		val := values[in.ID]
 		k := sortKey{getPos(in.InputBinding)}
@@ -86,9 +103,17 @@ func NewProcess(tool *cwl.Tool, values cwl.Values, rt Runtime, fs Filesystem) (*
 		process.bindings = append(process.bindings, b...)
 	}
 
+	//process.pre = process.tool.PreCommand
+	//process.post = process.tool.PostCommand
+
 	err = process.loadReqs()
 	if err != nil {
 		return nil, err
+	}
+
+	stdinI, err := process.eval(process.tool.Stdin, nil)
+	if err != nil {
+		return nil, wrap(err, "evaluating stdin expression")
 	}
 
 	stdoutI, err := process.eval(process.tool.Stdout, nil)
@@ -101,8 +126,15 @@ func NewProcess(tool *cwl.Tool, values cwl.Values, rt Runtime, fs Filesystem) (*
 		return nil, wrap(err, "evaluating stderr expression")
 	}
 
-	var stdoutStr, stderrStr string
+	var stdinStr, stdoutStr, stderrStr string
 	var ok bool
+
+	if stdinI != nil {
+		stdinStr, ok = stdinI.(string)
+		if !ok {
+			return nil, errf("stdin expression returned a non-string value")
+		}
+	}
 
 	if stdoutI != nil {
 		stdoutStr, ok = stdoutI.(string)
@@ -119,6 +151,7 @@ func NewProcess(tool *cwl.Tool, values cwl.Values, rt Runtime, fs Filesystem) (*
 	}
 
 	for _, out := range process.tool.Outputs {
+		//Cases with array type is not implemented
 		if len(out.Type) == 1 {
 			if _, ok := out.Type[0].(cwl.Stdout); ok && stdoutStr == "" {
 				stdoutStr = "stdout-" + xid.New().String()
@@ -128,10 +161,31 @@ func NewProcess(tool *cwl.Tool, values cwl.Values, rt Runtime, fs Filesystem) (*
 			}
 		}
 	}
+	process.stdin  = stdinStr
 	process.stdout = stdoutStr
 	process.stderr = stderrStr
 
+	files := []cwl.File{}
+	for _, in := range process.InputBindings() {
+	  if f, ok := in.Value.(cwl.File); ok {
+		files = append(files, flattenFiles(f)...)
+	  }
+	}
+	process.inputfiles = files
+
 	return process, nil
+}
+
+func (process *Process) InputFiles() []string {
+	files := []string{}
+	for _, in := range process.inputfiles {
+		files = append(files, in.Path)
+	}
+	return files
+}
+
+func (process *Process) Stdin() string {
+	return process.stdin
 }
 
 func (process *Process) Stdout() string {
@@ -146,17 +200,55 @@ func (process *Process) Tool() *cwl.Tool {
 	return process.tool
 }
 
+func (process *Process) IsMultiCMDs() bool {
+	return process.multicmds
+}
+
 func (process *Process) Resources() Resources {
 	return process.resources
 }
 
-func (process *Process) Env() map[string]string {
+func (process *Process) Env() (map[string]string, []string) {
 	env := map[string]string{}
+	envExpr := []string{}
 	for k, v := range process.env {
 		env[k] = v
 	}
-	return env
+	for _, v := range process.envExpr {
+		envExpr = append(envExpr, v)
+	}
+	return env, envExpr
 }
+
+func (process *Process) LRM() map[string]string {
+	lrm := map[string]string{}
+	for k, v := range process.lrm {
+		lrm[k] = v
+	}
+	return lrm
+}
+
+//func (process *Process) PreCMD() []string {
+	/*
+	r := []string{}
+	for _, v := range process.pre {
+		r = append(r, v)
+	}
+	return r
+	*/
+//	return process.pre
+//}
+
+//func (process *Process) PostCMD() []string {
+	/*
+	r := []string{}
+	for _, v := range process.post {
+		r = append(r, v)
+	}
+	return r
+	*/
+//	return process.post
+//}
 
 func (process *Process) loadReqs() error {
 	reqs := append([]cwl.Requirement{}, process.tool.Requirements...)
@@ -173,6 +265,10 @@ func (process *Process) loadReqs() error {
 			if err != nil {
 				return errf("failed to evaluate EnvVarRequirement: %s", err)
 			}
+			process.envExpr, err = process.evalExprArr(z.EnvExpr)
+			if err != nil {
+				return errf("failed to evaluate EnvVarRequirement: %s", err)
+			}
 
 		case cwl.ResourceRequirement:
 			// TODO eval expressions
@@ -181,6 +277,27 @@ func (process *Process) loadReqs() error {
 			return errf("SchemaDefRequirement is not supported (yet)")
 		case cwl.InitialWorkDirRequirement:
 			return errf("InitialWorkDirRequirement is not supported (yet)")
+		/*
+		case cwl.PreCMDRequirement:
+			pre, err := process.evalExprArr(z.PreCMD)
+			if err != nil {
+				return errf("failed to evaluate PreCMDRequirement: %s", err)
+			}
+			process.pre = pre
+
+		case cwl.PostCMDRequirement:
+			post, err := process.evalExprArr(z.PostCMD)
+			if err != nil {
+				return errf("failed to evaluate PostCMDRequirement: %s", err)
+			}
+			process.post = post
+		*/
+		case cwl.LRMRequirement:
+			err := process.evalLRM(z.LRMDef)
+			if err != nil {
+				return errf("failed to evaluate LRMRequirement: %s", err)
+			}
+			
 		}
 	}
 	return nil
@@ -197,6 +314,37 @@ func (process *Process) evalEnvVars(def map[string]cwl.Expression) error {
 			return errf(`EnvVar must evaluate to a string, got "%s"`, val)
 		}
 		process.env[k] = str
+	}
+	return nil
+}
+
+func (process *Process) evalExprArr(arr []cwl.Expression) ([]string, error) {
+	var r []string
+	for _, expr := range arr {
+		val, err := process.eval(expr, nil)
+		if err != nil {
+			return nil, errf(`failed to evaluate expression: "%s": %s`, expr, err)
+		}
+		str, ok := val.(string)
+		if !ok {
+			return nil, errf(`ExprArr must evaluate to a string, got "%s"`, val)
+		}
+		r = append(r, str)
+	}
+	return r, nil
+}
+
+func (process *Process) evalLRM(def map[string]cwl.Expression) error {
+	for k, expr := range def {
+		val, err := process.eval(expr, nil)
+		if err != nil {
+			return errf(`failed to evaluate expression: "%s": %s`, expr, err)
+		}
+		str, ok := val.(string)
+		if !ok {
+			return errf(`LRM must evaluate to a string, got "%s"`, val)
+		}
+		process.lrm[k] = str
 	}
 	return nil
 }

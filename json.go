@@ -152,3 +152,27 @@ func (x StepInputExpressionRequirement) MarshalJSON() ([]byte, error) {
 		Wrap
 	}{"StepInputExpressionRequirement", Wrap(x)})
 }
+/*
+func (x PreCMDRequirement) MarshalJSON() ([]byte, error) {
+	type Wrap PreCMDRequirement
+	return json.Marshal(struct {
+		Class string `json:"class"`
+		Wrap
+	}{"PreCMDRequirement", Wrap(x)})
+}
+
+func (x PostCMDRequirement) MarshalJSON() ([]byte, error) {
+	type Wrap PostCMDRequirement
+	return json.Marshal(struct {
+		Class string `json:"class"`
+		Wrap
+	}{"PostCMDRequirement", Wrap(x)})
+}
+*/
+func (x LRMRequirement) MarshalJSON() ([]byte, error) {
+	type Wrap LRMRequirement
+	return json.Marshal(struct {
+		Class string `json:"class"`
+		Wrap
+	}{"LRMRequirement", Wrap(x)})
+}

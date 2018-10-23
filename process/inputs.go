@@ -1,7 +1,7 @@
 package process
 
 import (
-	"github.com/buchanae/cwl"
+	"cwl"
 	"github.com/spf13/cast"
 )
 
@@ -22,6 +22,10 @@ type Binding struct {
 	sortKey sortKey
 	nested  []*Binding
 	name    string
+}
+
+func (binding *Binding) Name() string {
+	return binding.name
 }
 
 func (process *Process) InputBindings() []*Binding {
@@ -206,7 +210,7 @@ Loop:
 				return nil, err
 			}
 			// TODO figure out a good way to do this.
-			f.Path = "/inputs/" + f.Path
+			//f.Path = "/inputs/" + f.Path			
 			for _, expr := range secondaryFiles {
 				process.resolveSecondaryFiles(f, expr)
 			}
@@ -230,3 +234,4 @@ Loop:
 
 	return nil, errf("missing value")
 }
+

@@ -1,7 +1,7 @@
 package expr
 
 import (
-	"github.com/buchanae/cwl"
+	"cwl"
 	"github.com/robertkrimen/otto"
 	"regexp"
 	"strings"
@@ -140,7 +140,7 @@ func EvalParts(parts []*Part, libs []string, data map[string]interface{}) (inter
 
 		val, err := vm.Run(code)
 		if err != nil {
-			return nil, errf("failed to run JS expression: %s", err)
+			return nil, errf("failed to run JS expression: %s, error msg: %s", code, err)
 		}
 
 		// otto docs:
@@ -159,7 +159,7 @@ func EvalParts(parts []*Part, libs []string, data map[string]interface{}) (inter
 
 			val, err := vm.Run(part.Expr)
 			if err != nil {
-				return nil, errf("failed to run JS expression: %s", err)
+				return nil, errf("failed to run JS expression: %s, error msg: %s", part.Expr, err)
 			}
 
 			sval, err := val.ToString()

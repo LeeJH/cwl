@@ -1,10 +1,12 @@
 package cwl
 
 type Workflow struct {
+	Gid 		int64 `xorm:"pk"`
 	CWLVersion string `json:"cwlVersion,omitempty"`
 	ID         string `json:"id,omitempty"`
 	Label      string `json:"label,omitempty"`
 	Doc        string `json:"doc,omitempty"`
+	SourceFile string `json:"sourcefile,omitempty"`
 
 	Hints        []Requirement `json:"hints,omitempty"`
 	Requirements []Requirement `json:"requirements,omitempty"`

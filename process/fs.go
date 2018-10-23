@@ -3,8 +3,8 @@ package process
 import (
 	"errors"
 	"github.com/alecthomas/units"
-	"github.com/buchanae/cwl"
-	"github.com/buchanae/cwl/expr"
+	"cwl"
+	"cwl/expr"
 	"github.com/google/uuid"
 	"path/filepath"
 	"strings"
@@ -71,6 +71,7 @@ func (process *Process) resolveFile(f cwl.File, loadContents bool) (cwl.File, er
 		}
 
 	} else {
+		// Only the local filesystem case implemented.
 		x, err = process.fs.Info(f.Location)
 		if err != nil {
 			return x, errf("getting file info for %q: %s", f.Location, err)
@@ -92,7 +93,8 @@ func (process *Process) resolveFile(f cwl.File, loadContents bool) (cwl.File, er
 	//      remember, the args building depends on this path, so it must happen
 	//      in the Process code.
 	//f.Path = filepath.Join("/inputs", filepath.Base(x.Path))
-	f.Path = filepath.Base(x.Path)
+	//f.Path = filepath.Base(x.Path)
+	f.Path = x.Path
 	f.Checksum = x.Checksum
 	f.Size = x.Size
 

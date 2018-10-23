@@ -31,6 +31,13 @@ func (l *loader) MappingToDocument(n node) (Document, error) {
 		}
 		return t, nil
 
+	case "scripttool":
+		t := &Script{}
+		if err := l.load(n, t); err != nil {
+			return nil, err
+		}
+		return t, nil
+
 	case "workflow":
 		wf := &Workflow{}
 		if err := l.load(n, wf); err != nil {
@@ -58,7 +65,15 @@ func (l *loader) ScalarToDocument(n node) (Document, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve document: %s", err)
 	}
-	return LoadDocumentBytes(b, base, l.resolver)
+	doc, err := LoadDocumentBytes(b, base, l.resolver)
+	loc := l.base + "/" + n.Value
+	switch z := doc.(type) {
+	case *Tool:
+		z.SourceFile = loc
+	case *Workflow:
+	  	z.SourceFile = loc
+	}
+	return doc, err
 }
 
 func (l *loader) ScalarToExpressionSlice(n node) ([]Expression, error) {

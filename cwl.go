@@ -31,7 +31,14 @@ func LoadWithResolver(loc string, r Resolver) (Document, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve document: %s", err)
 	}
-	return LoadDocumentBytes(b, base, r)
+	doc, err := LoadDocumentBytes(b, base, r)
+	switch z := doc.(type) {
+	case *Tool:
+		z.SourceFile = loc
+	case *Workflow:
+	  	z.SourceFile = loc
+	}
+	return doc, err
 }
 
 func LoadDocumentBytes(b []byte, base string, r Resolver) (Document, error) {

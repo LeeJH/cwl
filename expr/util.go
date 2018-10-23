@@ -2,7 +2,7 @@ package expr
 
 import (
 	"fmt"
-	"github.com/buchanae/cwl"
+	"cwl"
 	"github.com/kr/pretty"
 )
 

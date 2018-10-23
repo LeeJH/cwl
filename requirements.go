@@ -26,6 +26,7 @@ type ResourceRequirement struct {
 
 type EnvVarRequirement struct {
 	EnvDef map[string]Expression `json:"envDef,omitempty"`
+	EnvExpr []Expression `json:"envExpr,omitempty"`
 }
 
 type ShellCommandRequirement struct {
@@ -77,4 +78,17 @@ type MultipleInputFeatureRequirement struct {
 }
 
 type StepInputExpressionRequirement struct {
+}
+/*
+type PreCMDRequirement struct {
+	PreCMD []Expression `json:"preCMD,omitempty"`
+}
+
+type PostCMDRequirement struct {
+	PostCMD []Expression `json:"postCMD,omitempty"`
+}
+*/
+type LRMRequirement struct {
+	Type 	string 		`json:"type,omitempty"`
+	LRMDef map[string]Expression `json:"lrmDef,omitempty"`
 }

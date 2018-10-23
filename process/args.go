@@ -2,7 +2,7 @@ package process
 
 import (
 	"fmt"
-	"github.com/buchanae/cwl"
+	"cwl"
 	"sort"
 	"strings"
 )
@@ -57,6 +57,61 @@ func (process *Process) Command() ([]string, error) {
 	return cmd, nil
 }
 
+func (process *Process) MultiCommands() ([]string, error) {
+
+	/*
+	// Copy "Tool.Inputs" bindings
+	args := make([]*Binding, 0, len(process.bindings))
+	for _, b := range process.bindings {
+		if b.clb != nil {
+			args = append(args, b)
+		}
+	}
+	*/
+	
+	cmds := make([]string, 0)
+
+	// Add "Tool.Arguments"
+	for _, step := range process.tool.CSteps {
+		args := make([]*Binding, 0)
+		for i, arg := range step.Arguments {
+			if arg.ValueFrom == "" {
+				return nil, errf("valueFrom is required but missing for argument %d", i)
+			}
+			args = append(args, &Binding{
+				arg, argType{}, nil, sortKey{arg.Position}, nil, "",
+			})
+		}
+
+		// Evaluate "valueFrom" expression.
+		for _, b := range args {
+			if b.clb.GetValueFrom() != "" {
+				val, err := process.eval(b.clb.GetValueFrom(), b.Value)
+				if err != nil {
+					return nil, errf("failed to eval argument value: %s", err)
+				}
+				b.Value = val
+			}
+		}
+
+		sort.Stable(bySortKey(args))
+		//debug(args)
+
+		// Now collect the input bindings into command line arguments
+		cmd := append([]string{}, step.BaseCommand...)
+		for _, b := range args {
+			cmd = append(cmd, bindArgs(b)...)
+		}
+
+		if process.tool.RequiresShellCommand() {
+			cmd = []string{"/bin/sh", "-c", strings.Join(cmd, " ")}
+		}
+
+		cmds = append(cmds, strings.Join(cmd, " "))
+	}
+	//debug("COMMAND", cmd)
+	return cmds, nil
+}
 // args converts a binding into a list of formatted command line arguments.
 func bindArgs(b *Binding) []string {
 	switch b.Type.(type) {

@@ -5,8 +5,8 @@ import (
 	"crypto/sha1"
 	"fmt"
 	"github.com/alecthomas/units"
-	"github.com/buchanae/cwl"
-	"github.com/buchanae/cwl/process"
+	"cwl"
+	"cwl/process"
 	"io"
 	"io/ioutil"
 	"os"
@@ -57,8 +57,19 @@ func (l *Local) Create(path, contents string) (cwl.File, error) {
 
 	loc := filepath.Join(l.workdir, path)
 	abs, err := filepath.Abs(loc)
+	
 	if err != nil {
 		return x, errf("getting absolute path for %s: %s", loc, err)
+	}
+
+	f, err := os.Create(abs)
+	defer f.Close()
+	if err != nil {
+		return x, errf("creating file %s: %s", abs, err)
+	}
+	_, err = f.WriteString(contents)
+	if err != nil {
+		return x, errf("Writing file %s: %s", abs, err)
 	}
 
 	return cwl.File{

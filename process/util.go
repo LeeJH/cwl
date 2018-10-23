@@ -2,7 +2,7 @@ package process
 
 import (
 	"fmt"
-	"github.com/buchanae/cwl"
+	"cwl"
 	"github.com/kr/pretty"
 	"os"
 	"strings"
@@ -35,3 +35,18 @@ func debug(args ...interface{}) {
 	}
 	fmt.Fprintf(os.Stderr, strings.Join(fmts, " ")+"\n", formatters...)
 }
+
+func flattenFiles(file cwl.File) []cwl.File {
+	files := []cwl.File{file}
+	for _, fd := range file.SecondaryFiles {
+	  // TODO fix the mismatch between cwl.File and *cwl.File
+	  if f, ok := fd.(*cwl.File); ok {
+		files = append(files, flattenFiles(*f)...)
+	  }
+	}
+	return files
+  }
+
+  func FlattenFiles(file cwl.File) []cwl.File {
+	return flattenFiles(file)
+  }

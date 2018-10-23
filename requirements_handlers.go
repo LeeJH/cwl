@@ -98,6 +98,20 @@ func (l *loader) loadReqByName(name string, n node) (Requirement, error) {
 		return MultipleInputFeatureRequirement{}, nil
 	case "stepinputexpressionrequirement":
 		return StepInputExpressionRequirement{}, nil
+	/*
+	case "precmdrequirement":
+		r := PreCMDRequirement{}
+		err := l.load(n, &r)
+		return r, err
+	case "postcmdrequirement":
+		r := PostCMDRequirement{}
+		err := l.load(n, &r)
+		return r, err
+	*/
+	case "lrmrequirement":
+		r := LRMRequirement{}
+		err := l.load(n, &r)
+		return r, err
 	}
 	return UnknownRequirement{Name: name}, nil
 	// TODO logging

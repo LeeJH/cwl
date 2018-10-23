@@ -1,7 +1,7 @@
 package process
 
 import (
-	"github.com/buchanae/cwl"
+	"cwl"
 	"github.com/spf13/cast"
 	"reflect"
 )

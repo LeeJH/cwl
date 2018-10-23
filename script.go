@@ -1,24 +1,18 @@
 package cwl
 
-type Tool struct {
+type Script struct {
 	CWLVersion string `json:"cwlVersion,omitempty"`
 	ID         string `json:"id,omitempty"`
 	Label      string `json:"label,omitempty"`
 	Doc        string `json:"doc,omitempty"`
-	SourceFile string `json:"sourcefile,omitempty"`
 
 	Hints        []Requirement `json:"hints,omitempty"`
 	Requirements []Requirement `json:"requirements,omitempty"`
 
-	Inputs  []CommandInput  `json:"inputs,omitempty"`
-	Outputs []CommandOutput `json:"outputs,omitempty"`
+	Inputs  []ScriptInput  `json:"inputs,omitempty"`
+	Outputs []ScriptOutput `json:"outputs,omitempty"`
 
-	MultiCMDs   bool 		`json:"multicmds,omitempty"`
-	BaseCommand []string              `json:"baseCommand,omitempty"`
-	Arguments   []*CommandLineBinding `json:"arguments,omitempty"`
-	//PreCommand  []string 			  `json:"preCommand,omitempty"`
-	//PostCommand  []string 			  `json:"postCommand,omitempty"`
-	CSteps  []CStep 			  `json:"csteps,omitempty"`
+	CSteps  []CStep   `json:"csteps,omitempty"`
 
 	Stdin  Expression `json:"stdin,omitempty"`
 	Stderr Expression `json:"stderr,omitempty"`
@@ -29,7 +23,7 @@ type Tool struct {
 	PermanentFailCodes []int `json:",omitempty"`
 }
 
-type CommandInput struct {
+type ScriptInput struct {
 	ID         string `json:"id,omitempty"`
 	Label      string `json:"label,omitempty"`
 	Doc        string `json:"doc,omitempty"`
@@ -44,7 +38,7 @@ type CommandInput struct {
 	InputBinding *CommandLineBinding `json:"inputBinding,omitempty"`
 }
 
-type CommandOutput struct {
+type ScriptOutput struct {
 	ID         string `json:"id,omitempty"`
 	Label      string `json:"label,omitempty"`
 	Doc        string `json:"doc,omitempty"`
@@ -58,18 +52,8 @@ type CommandOutput struct {
 	OutputBinding *CommandOutputBinding `json:"outputBinding,omitempty"`
 }
 
-type CommandLineBinding struct {
-	LoadContents  bool       `json:"loadContents,omitempty"`
-	Position      int        `json:"position,omitempty"`
-	Prefix        string     `json:"prefix,omitempty"`
-	ItemSeparator string     `json:"itemSeparator,omitempty"`
-	ValueFrom     Expression `json:"valueFrom,omitempty"`
-	Separate      OptOut     `json:"separate,omitempty"`
-	ShellQuote    OptOut     `json:"shellQuote,omitempty"`
+type CStep struct {
+	BaseCommand []string              `json:"baseCommand,omitempty"`
+	Arguments   []*CommandLineBinding `json:"arguments,omitempty"`
 }
 
-type CommandOutputBinding struct {
-	Glob         []Expression `json:"glob,omitempty"`
-	LoadContents bool         `json:"loadContents,omitempty"`
-	OutputEval   Expression   `json:"outputEval,omitempty"`
-}
